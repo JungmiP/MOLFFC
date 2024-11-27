@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>집중력 퀴즈 게임</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            font-family: 'Arial', sans-serif;
+        }
+
+        #div1 {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #div1 img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        #div2 {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            margin: 5px;
+            padding: 12px 20px;
+            font-size: 18px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-secondary {
+            background-color: #007bff;
+            border: none;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-secondary:active {
+            background-color: #003f7d;
+        }
+
+        .btn-large {
+            font-size: 22px;
+            padding: 15px 30px;
+        }
+
+        .score-card, .concentration-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .score-card h2, .concentration-card h2 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .score-card span, .concentration-card span {
+            font-size: 3rem;
+            color: #333;
+        }
+
+        #webCamera {
+            border-radius: 10px;
+            width: 100%;
+            max-width: 300px; /* 비디오 화면 크기 조정 */
+            margin-bottom: 20px;
+            border: 5px solid #fff; /* 카메라 화면 테두리 */
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 30px;
+        }
+
+        .question-container {
+            width: 60%;
+        }
+
+        .controls-container {
+            width: 30%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .question-container, .controls-container {
+                width: 100%;
+            }
+        }
+
+        /* 집중도 그래픽 스타일 */
+        .progress {
+            height: 30px;
+            border-radius: 25px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body onload="camera_start()">
+
+<!-- 카메라 화면 -->
+<video autoplay="true" id="webCamera"></video>
+
+<div class="container">
+    <!-- 퀴즈 및 컨트롤 -->
+    <div class="question-container">
+        <div id="div1">
+            <img id="question" src="./img/question1.png">
+        </div>
+
+        <div class="d-flex justify-content-center mt-3">
+            <button type="button" class="btn btn-secondary btn-large" onclick="changeImg(0)">←</button>
+            <button type="button" class="btn btn-secondary btn-large" onclick="checkAnswer(1)">①</button>
+            <button type="button" class="btn btn-secondary btn-large" onclick="checkAnswer(2)">②</button>
+            <button type="button" class="btn btn-secondary btn-large" onclick="checkAnswer(3)">③</button>
+            <button type="button" class="btn btn-secondary btn-large" onclick="checkAnswer(4)">④</button>
+            <button type="button" class="btn btn-secondary btn-large" onclick="checkAnswer(5)">⑤</button>
+            <button type="button" class="btn btn-secondary btn-large" onclick="changeImg(1)">→</button>
+        </div>
+    </div>
+
+    <!-- 점수 및 집중도 표시 -->
+    <div class="controls-container">
+        <div class="score-card">
+            <h2>나의 점수</h2>
+            <span id="score">0</span> 점
+        </div>
+
+        <div class="concentration-card mt-3">
+            <h2>현재 집중도</h2>
+            <span id="nowConcentrate">0</span>%
+            <div class="progress mt-3">
+                <div class="progress-bar" id="focus-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let num = 1;
+    let answer = {1:1, 2:4, 3:2, 4:1, 5:4};
+    let myScore = 0;
+
+    function changeImg(toggle) {
+        if (toggle == 1) {
+            num += 1;
+            if (num == 6) {
+                num = 1;
+            }
+        } else {
+            num -= 1;
+            if (num == 0) {
+                num = 5;
+            }
+        }
+        document.getElementById("question").src = "./img/question" + num + ".png";
+    }
+
+    function checkAnswer(sel) {
+        if (answer[num] == sel) {
+            document.getElementById("score").innerText = parseInt(document.getElementById("score").innerText) + 20;
+            alert('정답입니다.');
+        } else {
+            alert('오답입니다.');
+        }
+    }
+
+    function camera_start() {
+        var video = document.getElementById("webCamera");
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                });
+        }
+    }
+
+    function drawImge() {
+        var video = document.getElementById("webCamera");
+        var audio = new Audio("./sounds/CrazyDinnerBell.mp3");
+        var canvas = document.createElement("canvas");
+        var ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        var canvas_img = canvas.toDataURL("image/jpeg", 1.0);
+
+        axios({
+            method: "post",
+            url: "sendImg",
+            data: { "img_data": canvas_img },
+            headers: { "Content-Type": "image/jpeg" }
+        }).then(function (response) {
+            var focusScore = Math.floor(parseFloat(response.data) * 1000000) / 10000;
+            document.getElementById("nowConcentrate").innerText = focusScore;
+
+            // 집중도 시각화
+            var progressBar = document.getElementById("focus-bar");
+            progressBar.style.width = focusScore + "%";
+            progressBar.setAttribute("aria-valuenow", focusScore);
+
+            // 집중도가 낮으면 경고음 발생
+            if (focusScore < 60) {
+                audio.play();
+            }
+        });
+
+        setTimeout(drawImge, 1000);
+    }
+
+    var video = document.getElementById("webCamera");
+    video.onplay = function () {
+        setTimeout(drawImge, 300);
+    };
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
